@@ -1,0 +1,65 @@
+import random
+import numpy as np
+
+class City:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def distance(self, city):
+        return np.sqrt((self.x - city.x)**2 + (self.y - city.y)**2)
+
+class Route:
+    def __init__(self, cities):
+        self.route = cities
+        self.distance = self.calculate_distance()
+
+    def calculate_distance(self):
+        total_distance = 0
+        for i in range(len(self.route) - 1):
+            total_distance += self.route[i].distance(self.route[i+1])
+        total_distance += self.route[-1].distance(self.route[0])
+        return total_distance
+
+def create_random_route(cities):
+    route = random.sample(cities, len(cities))
+    return Route(route)
+
+def genetic_algorithm(cities, population_size, generations):
+    current_population = [create_random_route(cities) for _ in range(population_size)]
+
+    for gen in range(generations):
+        current_population.sort(key=lambda x: x.distance)
+        new_population = current_population[:population_size // 2]
+
+        while len(new_population) < population_size:
+            parent1, parent2 = random.sample(current_population[:population_size // 2], 2)
+            child_route = crossover(parent1, parent2)
+            new_population.append(child_route)
+
+        current_population = new_population
+
+    best_route = min(current_population, key=lambda x: x.distance)
+    return best_route
+
+def crossover(parent1, parent2):
+    start_idx = random.randint(0, len(parent1.route) - 1)
+    end_idx = random.randint(start_idx + 1, len(parent1.route))
+    child_route = [None] * len(parent1.route)
+
+    for i in range(start_idx, end_idx):
+        child_route[i] = parent1.route[i]
+
+    remaining_cities = [city for city in parent2.route if city not in child_route]
+
+    for i in range(len(child_route)):
+        if child_route[i] is None:
+            child_route[i] = remaining_cities.pop(0)
+
+    return Route(child_route)
+
+if __name__ == "__main__":
+    cities = [City(random.randint(0, 100), random.randint(0, 100)) for _ in range(20)]
+    best_route = genetic_algorithm(cities, population_size=100, generations=100)
+    print("Best route:", [cities.index(city) for city in best_route.route])
+    print("Shortest distance:", best_route.distance)
